@@ -26,6 +26,10 @@ require "usage_credits/models/concerns/has_wallet"
 require "usage_credits/models/concerns/pay_subscription_extension"
 require "usage_credits/models/concerns/pay_charge_extension"
 
+# PaddleRails integration (optional - loaded eagerly if PaddleRails is already loaded,
+# otherwise autoloaded when the engine initializer includes it via config.after_initialize)
+require "usage_credits/models/concerns/paddle_rails_subscription_extension" if defined?(PaddleRails)
+
 # 4. Core functionality
 require "usage_credits/version"
 require "usage_credits/configuration"  # Single source of truth for all configuration in this gem

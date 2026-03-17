@@ -173,6 +173,43 @@ module UsageCredits
       { default: ids } # Wrap single ID in hash for consistency
     end
 
+    # Shorthand for Paddle price ID(s)
+    # Supports both single price and multi-period prices
+    #
+    # @overload paddle_price
+    #   Get all Paddle price IDs
+    #   @return [String, Hash] Single price ID or hash of period => price_id
+    # @overload paddle_price(id)
+    #   Set a single Paddle price ID
+    #   @param id [String] The Paddle price ID
+    # @overload paddle_price(prices)
+    #   Set multiple period-specific Paddle price IDs
+    #   @param prices [Hash] Hash of period => price_id (e.g., { month: "pri_m", year: "pri_y" })
+    # @overload paddle_price(period)
+    #   Get Paddle price ID for a specific period
+    #   @param period [Symbol] The billing period (e.g., :month, :year)
+    #   @return [String, nil] Price ID for that period
+    def paddle_price(id_or_period = nil)
+      if id_or_period.nil?
+        plan_id_for(:paddle)
+      elsif id_or_period.is_a?(Hash)
+        processor_plan(:paddle, id_or_period)
+      elsif id_or_period.is_a?(Symbol)
+        plan_id_for(:paddle, period: id_or_period)
+      else
+        processor_plan(:paddle, id_or_period)
+      end
+    end
+
+    # Get all Paddle price IDs as a hash (always returns hash format)
+    # @return [Hash] Hash of period => price_id, or { default: price_id } for single-price plans
+    def paddle_prices
+      ids = plan_id_for(:paddle)
+      return {} if ids.nil?
+      return ids if ids.is_a?(Hash)
+      { default: ids }
+    end
+
     # Check if this plan matches a given processor price ID
     # Works with both single-price and multi-period plans
     # @param processor_id [String] The price ID to match

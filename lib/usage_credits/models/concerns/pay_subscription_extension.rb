@@ -464,6 +464,12 @@ module UsageCredits
       upgrade_transaction = nil
 
       ActiveRecord::Base.transaction do
+        # Expire remaining subscription credits from the old plan to prevent
+        # credit accumulation when upgrading/downgrading repeatedly.
+        # Only expires subscription-related credits for this subscription;
+        # signup bonuses, credit packs, and manual adjustments are preserved.
+        expire_previous_subscription_credits(wallet)
+
         # Grant full new plan credits immediately
         # Use string keys consistently to avoid duplicates after JSON serialization
         upgrade_transaction = wallet.add_credits(
@@ -608,6 +614,29 @@ module UsageCredits
     # =========================================
     # Helper Methods
     # =========================================
+
+    # Expire remaining subscription credits from the current plan.
+    # This prevents credit accumulation when users upgrade/downgrade repeatedly.
+    # Only targets renewable subscription credits (subscription_credits, subscription_upgrade);
+    # signup bonuses, trial credits, credit packs, and manual adjustments are preserved.
+    def expire_previous_subscription_credits(wallet)
+      subscription_categories = %w[subscription_credits subscription_upgrade]
+
+      expired_count = wallet.transactions
+        .where(category: subscription_categories)
+        .where("amount > 0")
+        .where("expires_at IS NULL OR expires_at > ?", Time.current)
+        .update_all(expires_at: Time.current)
+
+      if expired_count > 0
+        # Sync wallet balance after expiring old credits
+        wallet.with_lock do
+          wallet.balance = wallet.credits
+          wallet.save!
+        end
+        Rails.logger.info "  Expired #{expired_count} previous subscription credit transaction(s) for subscription #{id}"
+      end
+    end
 
     # Calculate credit expiration date for a given plan
     # Handles the edge case where base_time might be in the past (e.g., paused subscription reactivated)

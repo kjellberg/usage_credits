@@ -128,7 +128,9 @@ module UsageCredits
         "fulfillment_id" => @fulfillment.id
       }
 
-      if @fulfillment.source.is_a?(Pay::Subscription)
+      if defined?(Pay::Subscription) && @fulfillment.source.is_a?(Pay::Subscription)
+        base_metadata["subscription_id"] = @fulfillment.source.id
+      elsif defined?(PaddleRails::Subscription) && @fulfillment.source.is_a?(PaddleRails::Subscription)
         base_metadata["subscription_id"] = @fulfillment.source.id
       end
 

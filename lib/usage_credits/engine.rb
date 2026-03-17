@@ -30,6 +30,14 @@ module UsageCredits
       end
     end
 
+    initializer "usage_credits.paddle_rails_integration" do
+      config.after_initialize do
+        if defined?(PaddleRails::Subscription)
+          PaddleRails::Subscription.include UsageCredits::PaddleRailsSubscriptionExtension
+        end
+      end
+    end
+
     initializer "usage_credits.configs" do
       # Initialize any config settings
     end
